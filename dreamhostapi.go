@@ -10,14 +10,8 @@ import (
 	"net/url"
 )
 
-//credentials are the credentials needed to talk to the Dreamhost API
-type credentials struct {
-	ApiKey  string `json:"api_key"`
-	Domains []string
-}
-
 //dnsRecordsJSON holds the JSON returned by the Dreamhost API
-type dnsRecordsJSON struct {
+type DnsRecordsJSON struct {
 	Data []map[string]string `json:"data"`
 }
 
@@ -52,7 +46,7 @@ func submitDreamhostCommand(command string, apiKey string) string {
 	queryParameters.Add("cmd", command)
 	queryParameters.Add("format", "json")
 	fullURL := apiURLBase + queryParameters.Encode()
-	dreamhostResponse := webGet(fullURL)
+	dreamhostResponse := WebGet(fullURL)
 	return dreamhostResponse
 }
 
