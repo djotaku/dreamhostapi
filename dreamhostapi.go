@@ -21,10 +21,6 @@ type dnsRecordsJSON struct {
 	Data []map[string]string `json:"data"`
 }
 
-type innerData struct {
-	Records []map[string]string `json:"data"`
-}
-
 // commandResult for when you only care about the result
 type commandResult struct {
 	Data string `json:"result"`
