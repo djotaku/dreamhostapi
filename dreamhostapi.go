@@ -27,7 +27,7 @@ type commandResult struct {
 }
 
 // webGet handles contacting a URL
-func webGet(url string) string {
+func WebGet(url string) string {
 	response, err := http.Get(url)
 	if err != nil {
 		log.Println(err)
