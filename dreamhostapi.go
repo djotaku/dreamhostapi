@@ -44,12 +44,6 @@ func webGet(url string) string {
 	return string(result)
 }
 
-//getHostIpAddress gets the outside IP address of the computer it's on
-func getHostIpAddress() string {
-	ipAddress := webGet("https://api.ipify.org")
-	return string(ipAddress)
-}
-
 //submitDreamhostCommand takes in a command string and api key, contacts the API and returns the result
 func submitDreamhostCommand(command string, apiKey string) string {
 	apiURLBase := "https://api.dreamhost.com/?"
@@ -63,7 +57,7 @@ func submitDreamhostCommand(command string, apiKey string) string {
 }
 
 //getDNSRecords gets the DNS records from the Dreamhost API
-func getDNSRecords(apiKey string) string {
+func GetDNSRecords(apiKey string) string {
 	dnsRecords := submitDreamhostCommand("dns-list_records", apiKey)
 	return dnsRecords
 }
@@ -76,7 +70,7 @@ func conditionalLog(message string, logActive bool) {
 }
 
 // addDNSRecord adds an IP address to a domain in dreamhost
-func addDNSRecord(domain string, newIPAddress string, apiKey string) string {
+func AddDNSRecord(domain string, newIPAddress string, apiKey string) string {
 	command := "dns-add_record&record=" + domain + "&type=A" + "&value=" + newIPAddress
 	response := submitDreamhostCommand(command, apiKey)
 	var result commandResult
@@ -89,7 +83,7 @@ func addDNSRecord(domain string, newIPAddress string, apiKey string) string {
 }
 
 // deleteDNSRecord deletes an IP address to a domain in dreamhost
-func deleteDNSRecord(domain string, newIPAddress string, apiKey string) string {
+func DeleteDNSRecord(domain string, newIPAddress string, apiKey string) string {
 	command := "dns-remove_record&record=" + domain + "&type=A" + "&value=" + newIPAddress
 	response := submitDreamhostCommand(command, apiKey)
 	var result commandResult
@@ -102,9 +96,9 @@ func deleteDNSRecord(domain string, newIPAddress string, apiKey string) string {
 }
 
 //updateDNSRecord adds a record and, if successful, deletes the old one.
-func updateDNSRecord(domain string, currentIP string, newIPAddress string, apiKey string) {
-	resultOfAdd := addDNSRecord(domain, newIPAddress, apiKey)
+func UpdateDNSRecord(domain string, currentIP string, newIPAddress string, apiKey string) {
+	resultOfAdd := AddDNSRecord(domain, newIPAddress, apiKey)
 	if resultOfAdd == "sucess" {
-		deleteDNSRecord(domain, currentIP, apiKey)
+		DeleteDNSRecord(domain, currentIP, apiKey)
 	}
 }
