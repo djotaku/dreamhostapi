@@ -21,10 +21,10 @@ type commandResult struct {
 }
 
 // webGet handles contacting a URL
-func WebGet(url string) string {
+func WebGet(url string) (string, error) {
 	response, err := http.Get(url)
 	if err != nil {
-		log.Println(err)
+		return "Error accessing URL", err
 	}
 	result, err := io.ReadAll(response.Body)
 	response.Body.Close()
@@ -33,27 +33,33 @@ func WebGet(url string) string {
 		log.Println(statusCodeString)
 	}
 	if err != nil {
-		log.Println(err)
+		return "Error reading response", err
 	}
-	return string(result)
+	return string(result), err
 }
 
 //submitDreamhostCommand takes in a command string and api key, contacts the API and returns the result
-func submitDreamhostCommand(command string, apiKey string) string {
+func submitDreamhostCommand(command string, apiKey string) (string, error) {
 	apiURLBase := "https://api.dreamhost.com/?"
 	queryParameters := url.Values{}
 	queryParameters.Set("key", apiKey)
 	queryParameters.Add("cmd", command)
 	queryParameters.Add("format", "json")
 	fullURL := apiURLBase + queryParameters.Encode()
-	dreamhostResponse := WebGet(fullURL)
-	return dreamhostResponse
+	dreamhostResponse, err := WebGet(fullURL)
+	if err != nil {
+		return "", err
+	}
+	return dreamhostResponse, err
 }
 
 //getDNSRecords gets the DNS records from the Dreamhost API
-func GetDNSRecords(apiKey string) string {
-	dnsRecords := submitDreamhostCommand("dns-list_records", apiKey)
-	return dnsRecords
+func GetDNSRecords(apiKey string) (string, error) {
+	dnsRecords, err := submitDreamhostCommand("dns-list_records", apiKey)
+	if err != nil {
+		return "", err
+	}
+	return dnsRecords, err
 }
 
 //conditionalLog will print a log to the console if logActive true
@@ -64,35 +70,48 @@ func conditionalLog(message string, logActive bool) {
 }
 
 // addDNSRecord adds an IP address to a domain in dreamhost
-func AddDNSRecord(domain string, newIPAddress string, apiKey string) string {
+func AddDNSRecord(domain string, newIPAddress string, apiKey string) (string, error) {
 	command := "dns-add_record&record=" + domain + "&type=A" + "&value=" + newIPAddress
-	response := submitDreamhostCommand(command, apiKey)
-	var result commandResult
-	err := json.Unmarshal([]byte(response), &result)
+	response, err := submitDreamhostCommand(command, apiKey)
 	if err != nil {
-		fmt.Printf("Error: %s\n", err)
+		return "", err
 	}
-	log.Printf("Result of trying to add DNS record for %s is %s\n", domain, result.Data)
-	return result.Data
+	var result commandResult
+	jsonErr := json.Unmarshal([]byte(response), &result)
+	if err != nil {
+		return "", jsonErr
+	}
+	return result.Data, err
 }
 
 // deleteDNSRecord deletes an IP address to a domain in dreamhost
-func DeleteDNSRecord(domain string, newIPAddress string, apiKey string) string {
+func DeleteDNSRecord(domain string, newIPAddress string, apiKey string) (string, error) {
 	command := "dns-remove_record&record=" + domain + "&type=A" + "&value=" + newIPAddress
-	response := submitDreamhostCommand(command, apiKey)
-	var result commandResult
-	err := json.Unmarshal([]byte(response), &result)
+	response, err := submitDreamhostCommand(command, apiKey)
 	if err != nil {
-		log.Printf("Error: %s\n", err)
+		return "", err
+	}
+	var result commandResult
+	jsonErr := json.Unmarshal([]byte(response), &result)
+	if jsonErr != nil {
+		return "", jsonErr
 	}
 	log.Printf("Result of trying to delete DNS record for %s is %s\n", domain, result.Data)
-	return result.Data
+	return result.Data, jsonErr
 }
 
 //updateDNSRecord adds a record and, if successful, deletes the old one.
-func UpdateDNSRecord(domain string, currentIP string, newIPAddress string, apiKey string) {
-	resultOfAdd := AddDNSRecord(domain, newIPAddress, apiKey)
-	if resultOfAdd == "sucess" {
-		DeleteDNSRecord(domain, currentIP, apiKey)
+func UpdateDNSRecord(domain string, currentIP string, newIPAddress string, apiKey string) (string, string, error) {
+	resultOfAdd, err := AddDNSRecord(domain, newIPAddress, apiKey)
+	if err != nil {
+		return "", "", err
 	}
+	resultOfDelete := ""
+	if resultOfAdd == "sucess" {
+		resultOfDelete, err = DeleteDNSRecord(domain, currentIP, apiKey)
+		if err != nil {
+			return resultOfAdd, "", err
+		}
+	}
+	return resultOfAdd, resultOfDelete, err
 }
