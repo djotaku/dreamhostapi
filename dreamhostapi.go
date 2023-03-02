@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 //dnsRecordsJSON holds the JSON returned by the Dreamhost API
@@ -21,10 +22,10 @@ type commandResult struct {
 }
 
 // webGet handles contacting a URL
-func WebGet(url string) (string, error) {
+func WebGet(url string) (string, int, error) {
 	response, err := http.Get(url)
 	if err != nil {
-		return "Error accessing URL", err
+		return "Error accessing URL", 0, err
 	}
 	result, err := io.ReadAll(response.Body)
 	response.Body.Close()
@@ -33,9 +34,9 @@ func WebGet(url string) (string, error) {
 		log.Println(statusCodeString)
 	}
 	if err != nil {
-		return "Error reading response", err
+		return "Error reading response", 0, err
 	}
-	return string(result), err
+	return string(result), response.StatusCode, err
 }
 
 //submitDreamhostCommand takes in a command string and api key, contacts the API and returns the result
@@ -46,9 +47,14 @@ func submitDreamhostCommand(command string, apiKey string) (string, error) {
 	queryParameters.Add("cmd", command)
 	queryParameters.Add("format", "json")
 	fullURL := apiURLBase + queryParameters.Encode()
-	dreamhostResponse, err := WebGet(fullURL)
+	dreamhostResponse, statusCode, err := WebGet(fullURL)
 	if err != nil {
-		return "", err
+		return dreamhostResponse, err
+	}
+	if statusCode == 429 {
+		fmt.Println("Rate limit hit. Pausing execution for 10 minutes.")
+		time.Sleep(600 * time.Second)
+		dreamhostResponse, statusCode, err = WebGet(fullURL)
 	}
 	return dreamhostResponse, err
 }
