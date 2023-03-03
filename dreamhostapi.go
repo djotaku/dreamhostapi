@@ -102,7 +102,6 @@ func DeleteDNSRecord(domain string, newIPAddress string, apiKey string) (string,
 	if jsonErr != nil {
 		return "", jsonErr
 	}
-	log.Printf("Result of trying to delete DNS record for %s is %s\n", domain, result.Data)
 	return result.Data, jsonErr
 }
 
@@ -113,7 +112,7 @@ func UpdateDNSRecord(domain string, currentIP string, newIPAddress string, apiKe
 		return "", "", err
 	}
 	resultOfDelete := ""
-	if resultOfAdd == "sucess" {
+	if resultOfAdd == "success" {
 		resultOfDelete, err = DeleteDNSRecord(domain, currentIP, apiKey)
 		if err != nil {
 			return resultOfAdd, "", err
