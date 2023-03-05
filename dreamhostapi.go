@@ -1,4 +1,4 @@
-//Package dreamhostapi contains functions for interacting with the Dreamhost API
+// Package dreamhostapi contains functions for interacting with the Dreamhost API
 package dreamhostapi
 
 import (
@@ -11,14 +11,21 @@ import (
 	"time"
 )
 
-//dnsRecordsJSON holds the JSON returned by the Dreamhost API
+type DreamhostAPIError string
+
+func (apiErr DreamhostAPIError) Error() string {
+	return string(apiErr)
+}
+
+// dnsRecordsJSON holds the JSON returned by the Dreamhost API
 type DnsRecordsJSON struct {
 	Data []map[string]string `json:"data"`
 }
 
 // commandResult for when you only care about the result
 type commandResult struct {
-	Data string `json:"result"`
+	Data   string `json:"data"`
+	Result string `json:"result"`
 }
 
 // webGet handles contacting a URL
@@ -39,7 +46,7 @@ func WebGet(url string) (string, int, error) {
 	return string(result), response.StatusCode, err
 }
 
-//submitDreamhostCommand takes in a command string and api key, contacts the API and returns the result
+// submitDreamhostCommand takes in a command string and api key, contacts the API and returns the result
 func submitDreamhostCommand(command string, apiKey string) (string, error) {
 	apiURLBase := "https://api.dreamhost.com/?"
 	queryParameters := url.Values{}
@@ -59,7 +66,7 @@ func submitDreamhostCommand(command string, apiKey string) (string, error) {
 	return dreamhostResponse, err
 }
 
-//getDNSRecords gets the DNS records from the Dreamhost API
+// getDNSRecords gets the DNS records from the Dreamhost API
 func GetDNSRecords(apiKey string) (string, error) {
 	dnsRecords, err := submitDreamhostCommand("dns-list_records", apiKey)
 	if err != nil {
@@ -68,7 +75,7 @@ func GetDNSRecords(apiKey string) (string, error) {
 	return dnsRecords, err
 }
 
-//conditionalLog will print a log to the console if logActive true
+// conditionalLog will print a log to the console if logActive true
 func conditionalLog(message string, logActive bool) {
 	if logActive {
 		log.Println(message)
@@ -84,10 +91,13 @@ func AddDNSRecord(domain string, newIPAddress string, apiKey string) (string, er
 	}
 	var result commandResult
 	jsonErr := json.Unmarshal([]byte(response), &result)
-	if err != nil {
+	if jsonErr != nil {
 		return "", jsonErr
 	}
-	return result.Data, err
+	if result.Result == "error" {
+		err = DreamhostAPIError(result.Data)
+	}
+	return result.Result, err
 }
 
 // deleteDNSRecord deletes an IP address to a domain in dreamhost
@@ -102,21 +112,21 @@ func DeleteDNSRecord(domain string, newIPAddress string, apiKey string) (string,
 	if jsonErr != nil {
 		return "", jsonErr
 	}
-	return result.Data, jsonErr
+	if result.Result == "error" {
+		err = DreamhostAPIError(result.Data)
+	}
+	return result.Result, jsonErr
 }
 
-//updateDNSRecord adds a record and, if successful, deletes the old one.
+// updateDNSRecord adds a record and, if successful, deletes the old one.
 func UpdateDNSRecord(domain string, currentIP string, newIPAddress string, apiKey string) (string, string, error) {
 	resultOfAdd, err := AddDNSRecord(domain, newIPAddress, apiKey)
 	if err != nil {
 		return "", "", err
 	}
-	resultOfDelete := ""
-	if resultOfAdd == "success" {
-		resultOfDelete, err = DeleteDNSRecord(domain, currentIP, apiKey)
-		if err != nil {
-			return resultOfAdd, "", err
-		}
+	resultOfDelete, err := DeleteDNSRecord(domain, currentIP, apiKey)
+	if err != nil {
+		return resultOfAdd, "", err
 	}
 	return resultOfAdd, resultOfDelete, err
 }
