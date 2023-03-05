@@ -54,6 +54,8 @@ func submitDreamhostCommand(command string, apiKey string) (string, error) {
 	queryParameters.Add("cmd", command)
 	queryParameters.Add("format", "json")
 	fullURL := apiURLBase + queryParameters.Encode()
+  // debug
+  fmt.Println(fullURL)
 	dreamhostResponse, statusCode, err := WebGet(fullURL)
 	if err != nil {
 		return dreamhostResponse, err
