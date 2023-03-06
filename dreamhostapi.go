@@ -89,7 +89,7 @@ func conditionalLog(message string, logActive bool) {
 
 // addDNSRecord adds an IP address to a domain in dreamhost
 func AddDNSRecord(domain string, newIPAddress string, apiKey string) (string, error) {
-	command := map[string]string{"cmd": "dns-add_record", "record": domain, "type": "A", "value": "newIPAddress"}
+	command := map[string]string{"cmd": "dns-add_record", "record": domain, "type": "A", "value": newIPAddress}
 	response, err := submitDreamhostCommand(command, apiKey)
 	if err != nil {
 		return "", err
@@ -107,7 +107,7 @@ func AddDNSRecord(domain string, newIPAddress string, apiKey string) (string, er
 
 // deleteDNSRecord deletes an IP address to a domain in dreamhost
 func DeleteDNSRecord(domain string, newIPAddress string, apiKey string) (string, error) {
-	command := map[string]string{"cmd": "dns-remove_record", "record": domain, "type": "A", "value": "newIPAddress"}
+	command := map[string]string{"cmd": "dns-remove_record", "record": domain, "type": "A", "value": newIPAddress}
 	response, err := submitDreamhostCommand(command, apiKey)
 	if err != nil {
 		return "", err
