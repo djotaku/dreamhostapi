@@ -47,15 +47,17 @@ func WebGet(url string) (string, int, error) {
 }
 
 // submitDreamhostCommand takes in a command string and api key, contacts the API and returns the result
-func submitDreamhostCommand(command string, apiKey string) (string, error) {
+func submitDreamhostCommand(command map[string]string, apiKey string) (string, error) {
 	apiURLBase := "https://api.dreamhost.com/?"
 	queryParameters := url.Values{}
 	queryParameters.Set("key", apiKey)
-	queryParameters.Add("cmd", command)
+	for key, value := range command {
+		queryParameters.Add(key, value)
+	}
 	queryParameters.Add("format", "json")
 	fullURL := apiURLBase + queryParameters.Encode()
-  // debug
-  fmt.Println(fullURL)
+	// debug
+	fmt.Println(fullURL)
 	dreamhostResponse, statusCode, err := WebGet(fullURL)
 	if err != nil {
 		return dreamhostResponse, err
@@ -70,7 +72,8 @@ func submitDreamhostCommand(command string, apiKey string) (string, error) {
 
 // getDNSRecords gets the DNS records from the Dreamhost API
 func GetDNSRecords(apiKey string) (string, error) {
-	dnsRecords, err := submitDreamhostCommand("dns-list_records", apiKey)
+	command := map[string]string{"cmd": "dns-list_records"}
+	dnsRecords, err := submitDreamhostCommand(command, apiKey)
 	if err != nil {
 		return "", err
 	}
@@ -86,7 +89,7 @@ func conditionalLog(message string, logActive bool) {
 
 // addDNSRecord adds an IP address to a domain in dreamhost
 func AddDNSRecord(domain string, newIPAddress string, apiKey string) (string, error) {
-	command := "dns-add_record&record=" + domain + "&type=A" + "&value=" + newIPAddress
+	command := map[string]string{"cmd": "dns-add_record", "record": domain, "type": "A", "value": "newIPAddress"}
 	response, err := submitDreamhostCommand(command, apiKey)
 	if err != nil {
 		return "", err
@@ -104,7 +107,7 @@ func AddDNSRecord(domain string, newIPAddress string, apiKey string) (string, er
 
 // deleteDNSRecord deletes an IP address to a domain in dreamhost
 func DeleteDNSRecord(domain string, newIPAddress string, apiKey string) (string, error) {
-	command := "dns-remove_record&record=" + domain + "&type=A" + "&value=" + newIPAddress
+	command := map[string]string{"cmd": "dns-remove_record", "record": domain, "type": "A", "value": "newIPAddress"}
 	response, err := submitDreamhostCommand(command, apiKey)
 	if err != nil {
 		return "", err
