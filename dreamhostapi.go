@@ -19,9 +19,20 @@ func (apiErr DreamhostAPIError) Error() string {
 
 // dnsRecordsJSON holds the JSON returned by the Dreamhost API
 type DnsRecordsJSON struct {
-	Data []map[string]string `json:"data"`
+	Data []DnsRecord `json:"data"`
 }
 
+// DnsRecord is a DNS Record on Dreamhost
+type DnsRecord struct {
+	Record     string // the URL
+	Zone       string // This is the base of the URL. If Record is www.google.com, Zone is google.com
+	Value      string // this is what the zone points to - usually IP address
+	Editable   string // 0 or 1 value, but comes back as a string
+	ZoneType   string `json:"type"` // zone type, eg A, AAA, MX, etc 
+	Comment    string // comment that can be added to a record
+	AccountId string `json:"account_id"` // the account associated with this record
+}
+map[string]string
 // commandResult for when you only care about the result
 type commandResult struct {
 	Data   string `json:"data"`
