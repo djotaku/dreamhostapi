@@ -80,13 +80,20 @@ func submitDreamhostCommand(command map[string]string, apiKey string) (string, e
 }
 
 // getDNSRecords gets the DNS records from the Dreamhost API
-func GetDNSRecords(apiKey string) (string, error) {
+func GetDNSRecords(apiKey string) (DnsRecordsJSON, error) {
 	command := map[string]string{"cmd": "dns-list_records"}
 	dnsRecords, err := submitDreamhostCommand(command, apiKey)
 	if err != nil {
 		return "", err
 	}
-	return dnsRecords, err
+	var records DnsRecordsJSON
+	err = json.Unmarshal([]byte(dnsRecords), &records)
+	if err != nil {
+		errorString := fmt.Sprintf("Unable to unmashal the JSON from Dreamhost. err is: %n", err)
+		conditionalLog(errorString, *verbose)
+		fileLogger.Fatal(errorString)
+	}
+	return records, err
 }
 
 // conditionalLog will print a log to the console if logActive true
