@@ -1,3 +1,3 @@
 module github.com/djotaku/dreamhostapi
 
-go 1.22.5
+go 1.21.11
