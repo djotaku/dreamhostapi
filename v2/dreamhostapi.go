@@ -33,6 +33,10 @@ type DnsRecord struct {
 	AccountId string `json:"account_id"` // the account associated with this record
 }
 
+func (r DnsRecord) String() string {
+	return fmt.Sprintf("Record (URL): %s in Zone: %s. \nIt points to %s. \nZone Type: %s \nIs it Editable? %s. \nIt Belongs to: %s. \nComment: %s", r.Record, r.Zone, r.Value, r.ZoneType, r.Editable, r.AccountId, r.Comment)
+}
+
 // commandResult for when you only care about the result
 type commandResult struct {
 	Data   string `json:"data"`
