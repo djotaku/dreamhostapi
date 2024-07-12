@@ -34,7 +34,7 @@ type DnsRecord struct {
 }
 
 func (r DnsRecord) String() string {
-	return fmt.Sprintf("Record (URL): %s in Zone: %s. \nIt points to %s. \nZone Type: %s \nIs it Editable? %s. \nIt Belongs to: %s. \nComment: %s", r.Record, r.Zone, r.Value, r.ZoneType, r.Editable, r.AccountId, r.Comment)
+	return fmt.Sprintf("\nRecord (URL): %s in Zone: %s. \nIt points to %s. \nZone Type: %s \nIs it Editable? %s. \nIt Belongs to: %s. \nComment: %s\n", r.Record, r.Zone, r.Value, r.ZoneType, r.Editable, r.AccountId, r.Comment)
 }
 
 // commandResult for when you only care about the result
