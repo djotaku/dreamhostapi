@@ -78,13 +78,6 @@ func GetDNSRecords(apiKey string) (string, error) {
 	return dnsRecords, err
 }
 
-// conditionalLog will print a log to the console if logActive true
-func conditionalLog(message string, logActive bool) {
-	if logActive {
-		log.Println(message)
-	}
-}
-
 // addDNSRecord adds an IP address to a domain in dreamhost
 func AddDNSRecord(domain string, newIPAddress string, apiKey string) (string, error) {
 	command := map[string]string{"cmd": "dns-add_record", "record": domain, "type": "A", "value": newIPAddress}

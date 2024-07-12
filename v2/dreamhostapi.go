@@ -84,23 +84,16 @@ func GetDNSRecords(apiKey string) (DnsRecordsJSON, error) {
 	command := map[string]string{"cmd": "dns-list_records"}
 	dnsRecords, err := submitDreamhostCommand(command, apiKey)
 	if err != nil {
-		return "", err
+		var emptyrecords DnsRecordsJSON
+		return emptyrecords, err
 	}
 	var records DnsRecordsJSON
 	err = json.Unmarshal([]byte(dnsRecords), &records)
 	if err != nil {
-		errorString := fmt.Sprintf("Unable to unmashal the JSON from Dreamhost. err is: %n", err)
-		conditionalLog(errorString, *verbose)
-		fileLogger.Fatal(errorString)
+		var emptyrecords DnsRecordsJSON
+		return emptyrecords, err
 	}
 	return records, err
-}
-
-// conditionalLog will print a log to the console if logActive true
-func conditionalLog(message string, logActive bool) {
-	if logActive {
-		log.Println(message)
-	}
 }
 
 // addDNSRecord adds an IP address to a domain in dreamhost
