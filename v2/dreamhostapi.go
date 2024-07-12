@@ -1,4 +1,4 @@
-// Package dreamhostapi contains functions for interacting with the Dreamhost API
+// Package dreamhostapi contains functions for interacting with the Dreamhost API.
 package dreamhostapi
 
 import (
@@ -17,8 +17,8 @@ func (apiErr DreamhostAPIError) Error() string {
 	return string(apiErr)
 }
 
-// dnsRecordsJSON holds the JSON returned by the Dreamhost API
-type DnsRecordsJSON struct {
+// dnsRecords holds an array of DnsRecord structs returned by the Dreamhost API
+type DnsRecords struct {
 	Data []DnsRecord `json:"data"`
 }
 
@@ -37,13 +37,15 @@ func (r DnsRecord) String() string {
 	return fmt.Sprintf("\nRecord (URL): %s in Zone: %s. \nIt points to %s. \nZone Type: %s \nIs it Editable? %s. \nIt Belongs to: %s. \nComment: %s\n", r.Record, r.Zone, r.Value, r.ZoneType, r.Editable, r.AccountId, r.Comment)
 }
 
-// commandResult for when you only care about the result
+// A commandResult holds the JSON result from the Dreamhost API.
+// In this package, it's mostly used to return whether a command generated a successful response from the API.
 type commandResult struct {
 	Data   string `json:"data"`
 	Result string `json:"result"`
 }
 
-// webGet handles contacting a URL
+// webGet gets the data from a url.
+// It returns the body as a string, an int representing the HTTP status code, and any errors.
 func WebGet(url string) (string, int, error) {
 	response, err := http.Get(url)
 	if err != nil {
@@ -61,7 +63,8 @@ func WebGet(url string) (string, int, error) {
 	return string(result), response.StatusCode, err
 }
 
-// submitDreamhostCommand takes in a command string and api key, contacts the API and returns the result
+// submitDreamhostCommand returns the response from the Dreamhost API as JSON as well as any errors.
+// At this stage the JSON is not unmarshalled, it is returned as a string.
 func submitDreamhostCommand(command map[string]string, apiKey string) (string, error) {
 	apiURLBase := "https://api.dreamhost.com/?"
 	queryParameters := url.Values{}
@@ -78,29 +81,29 @@ func submitDreamhostCommand(command map[string]string, apiKey string) (string, e
 	if statusCode == 429 {
 		fmt.Println("Rate limit hit. Pausing execution for 10 minutes.")
 		time.Sleep(600 * time.Second)
-		dreamhostResponse, statusCode, err = WebGet(fullURL)
+		submitDreamhostCommand(command, apiKey)
 	}
 	return dreamhostResponse, err
 }
 
-// getDNSRecords gets the DNS records from the Dreamhost API
-func GetDNSRecords(apiKey string) (DnsRecordsJSON, error) {
+// getDNSRecords returns a DnsRecords struct containing all of the DNS records that correspond to this apiKey and any errors.
+func GetDNSRecords(apiKey string) (DnsRecords, error) {
 	command := map[string]string{"cmd": "dns-list_records"}
 	dnsRecords, err := submitDreamhostCommand(command, apiKey)
 	if err != nil {
-		var emptyrecords DnsRecordsJSON
+		var emptyrecords DnsRecords
 		return emptyrecords, err
 	}
-	var records DnsRecordsJSON
+	var records DnsRecords
 	err = json.Unmarshal([]byte(dnsRecords), &records)
 	if err != nil {
-		var emptyrecords DnsRecordsJSON
+		var emptyrecords DnsRecords
 		return emptyrecords, err
 	}
 	return records, err
 }
 
-// addDNSRecord adds an IP address to a domain in dreamhost
+// addDNSRecord returns the JSON "result" field after using the Dreamhost API to add an IP address to a domain in dreamhost and any errors.
 func AddDNSRecord(domain string, newIPAddress string, apiKey string) (string, error) {
 	command := map[string]string{"cmd": "dns-add_record", "record": domain, "type": "A", "value": newIPAddress}
 	response, err := submitDreamhostCommand(command, apiKey)
@@ -118,7 +121,7 @@ func AddDNSRecord(domain string, newIPAddress string, apiKey string) (string, er
 	return result.Result, err
 }
 
-// deleteDNSRecord deletes an IP address to a domain in dreamhost
+// deleteDNSRecord returns the JSON "result" field after using the Dreamhost API to delete an IP address from a domain in dreamhost and any errors.
 func DeleteDNSRecord(domain string, newIPAddress string, apiKey string) (string, error) {
 	command := map[string]string{"cmd": "dns-remove_record", "record": domain, "type": "A", "value": newIPAddress}
 	response, err := submitDreamhostCommand(command, apiKey)
@@ -136,7 +139,8 @@ func DeleteDNSRecord(domain string, newIPAddress string, apiKey string) (string,
 	return result.Result, jsonErr
 }
 
-// updateDNSRecord adds a record and, if successful, deletes the old one.
+// updateDNSRecord returns the JSON "result" field after using the Dreamhost API to first add the new IP address and, if successful, deleting the old one.
+// At whatever stage it errors out, it returns the empty string. So 2 empty strings would mean both operations errored.
 func UpdateDNSRecord(domain string, currentIP string, newIPAddress string, apiKey string) (string, string, error) {
 	resultOfAdd, err := AddDNSRecord(domain, newIPAddress, apiKey)
 	if err != nil {
