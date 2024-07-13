@@ -44,8 +44,7 @@ type commandResult struct {
 	Result string `json:"result"`
 }
 
-// webGet gets the data from a url.
-// It returns the body as a string, an int representing the HTTP status code, and any errors.
+// webGet returns the body as a string, an int representing the HTTP status code, and any errors.
 func WebGet(url string) (string, int, error) {
 	response, err := http.Get(url)
 	if err != nil {
@@ -64,6 +63,8 @@ func WebGet(url string) (string, int, error) {
 }
 
 // submitDreamhostCommand returns the response from the Dreamhost API as JSON as well as any errors.
+// The command map is essentially a map in which the keys correspond to the editable fields in the DNS Record and the fields are the values to change.
+// See the add and return commands in this package for examples.
 // At this stage the JSON is not unmarshalled, it is returned as a string.
 func submitDreamhostCommand(command map[string]string, apiKey string) (string, error) {
 	apiURLBase := "https://api.dreamhost.com/?"
