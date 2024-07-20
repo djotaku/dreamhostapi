@@ -39,7 +39,7 @@ func (r DnsRecord) String() string {
 }
 
 // webGet returns the body as a string, an int representing the HTTP status code, and any errors.
-func webGet(url string) (string, int, error) {
+func WebGet(url string) (string, int, error) {
 	response, err := http.Get(url)
 	if err != nil {
 		return "Error accessing URL", 0, err
