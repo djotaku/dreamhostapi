@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -108,7 +109,8 @@ func GetDNSRecords(apiKey string) (DnsRecords, error) {
 		return emptyRecords, err
 	}
 	var dnsRecordList DnsRecords
-	err = json.Unmarshal([]byte(dnsRecords.Data), &dnsRecordList)
+	err = json.NewDecoder(strings.NewReader(dnsRecords.Data)).Decode(&dnsRecordList)
+	//Unmarshal([]byte(dnsRecords.Data), &dnsRecordList)
 	if err != nil {
 		return emptyRecords, err // there was an error at the JSON unmarshalling level
 	}
