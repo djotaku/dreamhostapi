@@ -116,7 +116,7 @@ func GetDNSRecords(apiKey string) (DnsRecords, error) {
 // Currently implemented commands for the command parameter are:
 //   - "add" to add a value (typically IP address) to a record (typically a domain).
 //   - "del" to remove a value (typically IP address) from a record (typically a domain).
-func UpdateZoneFIle(command string, domain string, IPAddress string, apiKey string, comment string) (commandResult, error) {
+func UpdateZoneFile(command string, domain string, IPAddress string, apiKey string, comment string) (commandResult, error) {
 	var updateResult commandResult
 	var commandOptions map[string]string
 	switch command {
@@ -144,14 +144,14 @@ func UpdateZoneFIle(command string, domain string, IPAddress string, apiKey stri
 // If adding a record does not succeed, either through underlying error (web, JSON unmarshalling) or because the API was not successful, it will not continue to the deletion.
 func UpdateDNSRecord(domain string, currentIP string, newIPAddress string, apiKey string, comment string) (commandResult, commandResult, error) {
 	var empty commandResult
-	resultOfAdd, err := UpdateZoneFIle("add", domain, newIPAddress, apiKey, comment)
+	resultOfAdd, err := UpdateZoneFile("add", domain, newIPAddress, apiKey, comment)
 	if err != nil {
 		return empty, empty, err
 	}
 	if resultOfAdd.Result != "success" {
 		return resultOfAdd, empty, err
 	}
-	resultOfDelete, err := UpdateZoneFIle("del", domain, currentIP, apiKey, comment)
+	resultOfDelete, err := UpdateZoneFile("del", domain, currentIP, apiKey, comment)
 	if err != nil {
 		return resultOfAdd, resultOfDelete, err
 	}
