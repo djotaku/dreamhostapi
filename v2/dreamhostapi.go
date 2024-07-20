@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -59,7 +58,7 @@ func WebGet(url string) (string, int, error) {
 
 // A commandResult holds the JSON result from the Dreamhost API.
 type commandResult struct {
-	Data   any    `json:"data"`   // A string that would need to be unmarshalled to turn it into a map.
+	Data   string `json:"data"`   // A string that would need to be unmarshalled to turn it into a map.
 	Result string `json:"result"` // A string representing whether the API was successfully accessed or not.
 }
 
@@ -69,9 +68,8 @@ type commandResult struct {
 // As of now, all [Dreamhost DNS commands] are implemented.
 //
 // [Dreamhost DNS commands]: https://help.dreamhost.com/hc/en-us/articles/217555707-DNS-API-commands
-func submitDreamhostCommand(command map[string]string, apiKey string) (commandResult, error) {
-	var result commandResult
-	var empty commandResult // used for times when errors mean we're returning an empty DNS Records struct
+func submitDreamhostCommand(command map[string]string, apiKey string) (string, error) {
+	var dreamhostResponse string
 	apiURLBase := "https://api.dreamhost.com/?"
 	queryParameters := url.Values{}
 	queryParameters.Set("key", apiKey)
@@ -82,18 +80,14 @@ func submitDreamhostCommand(command map[string]string, apiKey string) (commandRe
 	fullURL := apiURLBase + queryParameters.Encode()
 	dreamhostResponse, statusCode, err := WebGet(fullURL)
 	if err != nil { // there was an error at the web level.
-		return empty, err
-	}
-	err = json.Unmarshal([]byte(dreamhostResponse), &result)
-	if err != nil {
-		return empty, err // there was an error at the JSON unmarshalling level
+		return dreamhostResponse, err
 	}
 	if statusCode == 429 {
 		fmt.Println("Rate limit hit. Pausing execution for 10 minutes.")
 		time.Sleep(600 * time.Second)
-		result, err = submitDreamhostCommand(command, apiKey)
+		dreamhostResponse, err = submitDreamhostCommand(command, apiKey)
 	}
-	return result, err
+	return dreamhostResponse, err
 }
 
 // getDNSRecords returns a DnsRecords struct containing all of the DNS records that correspond to this apiKey and any errors.
@@ -105,19 +99,14 @@ func GetDNSRecords(apiKey string) (DnsRecords, error) {
 	if err != nil {
 		return emptyRecords, err // will already be the empty record
 	}
-	if cmdResult.Result != "success" { // we hit the API successfully, but did not get back JSON successfully. eg: bad APIKey.
-		return emptyRecords, err
-	}
-	fmt.Println(cmdResult.Data)
 	var dnsRecordList DnsRecords
-	err = json.NewDecoder(strings.NewReader(cmdResult.Data)).Decode(&dnsRecordList)
-	//Unmarshal([]byte(dnsRecords.Data), &dnsRecordList)
+	err = json.Unmarshal([]byte(cmdResult), &dnsRecordList)
 	if err != nil {
-		fmt.Println("I'm in here!")
-		fmt.Println(cmdResult.Data)
 		return emptyRecords, err // there was an error at the JSON unmarshalling level
 	}
-	dnsRecordList.Result = cmdResult.Result
+	if dnsRecordList.Result != "success" { // we hit the API successfully, but did not get back JSON successfully. eg: bad APIKey.
+		return emptyRecords, err
+	}
 	return dnsRecordList, err
 }
 
@@ -128,6 +117,7 @@ func GetDNSRecords(apiKey string) (DnsRecords, error) {
 //   - "add" to add a value (typically IP address) to a record (typically a domain).
 //   - "del" to remove a value (typically IP address) from a record (typically a domain).
 func UpdateZoneFIle(command string, domain string, IPAddress string, apiKey string, comment string) (commandResult, error) {
+	var updateResult commandResult
 	var commandOptions map[string]string
 	switch command {
 	case "add":
@@ -140,9 +130,14 @@ func UpdateZoneFIle(command string, domain string, IPAddress string, apiKey stri
 	}
 	response, err := submitDreamhostCommand(commandOptions, apiKey)
 	if err != nil {
-		return response, err
+		return updateResult, err
 	}
-	return response, err
+	err = json.Unmarshal([]byte(response), &updateResult)
+	if err != nil {
+		return updateResult, err // there was an error at the JSON unmarshalling level
+	}
+
+	return updateResult, err
 }
 
 // updateDNSRecord returns the JSON "result" field after using the Dreamhost API to first add the new IP address and, if successful, deleting the old one.
