@@ -73,7 +73,7 @@ func submitDreamhostCommand(command map[string]string, apiKey string) (DnsRecord
 	}
 	queryParameters.Add("format", "json")
 	fullURL := apiURLBase + queryParameters.Encode()
-	dreamhostResponse, statusCode, err := webGet(fullURL)
+	dreamhostResponse, statusCode, err := WebGet(fullURL)
 	if err != nil { // there was an error at the web level.
 		return emptyrecords, err
 	}
