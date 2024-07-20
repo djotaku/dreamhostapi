@@ -56,15 +56,21 @@ func WebGet(url string) (string, int, error) {
 	return string(result), response.StatusCode, err
 }
 
+// A commandResult holds the JSON result from the Dreamhost API.
+type commandResult struct {
+	Data   string `json:"data"`   // A string that would need to be unmarshalled to turn it into a map.
+	Result string `json:"result"` // A string representing whether the API was successfully accessed or not.
+}
+
 // submitDreamhostCommand returns the response from the Dreamhost API as JSON as well as any errors.
 // In the case of any errors (eg web or JSON unmarshalling) it returns an empty struct.
 // The command map is essentially a map in which the keys correspond to the editable fields in the DNS Record and the fields are the values to change.
 // As of now, all [Dreamhost DNS commands] are implemented.
 //
 // [Dreamhost DNS commands]: https://help.dreamhost.com/hc/en-us/articles/217555707-DNS-API-commands
-func submitDreamhostCommand(command map[string]string, apiKey string) (DnsRecords, error) {
-	var records DnsRecords
-	var emptyrecords DnsRecords // used for times when errors mean we're returning an empty DNS Records struct
+func submitDreamhostCommand(command map[string]string, apiKey string) (commandResult, error) {
+	var result commandResult
+	var empty commandResult // used for times when errors mean we're returning an empty DNS Records struct
 	apiURLBase := "https://api.dreamhost.com/?"
 	queryParameters := url.Values{}
 	queryParameters.Set("key", apiKey)
@@ -75,34 +81,38 @@ func submitDreamhostCommand(command map[string]string, apiKey string) (DnsRecord
 	fullURL := apiURLBase + queryParameters.Encode()
 	dreamhostResponse, statusCode, err := WebGet(fullURL)
 	if err != nil { // there was an error at the web level.
-		return emptyrecords, err
+		return empty, err
 	}
-	err = json.Unmarshal([]byte(dreamhostResponse), &records)
+	err = json.Unmarshal([]byte(dreamhostResponse), &result)
 	if err != nil {
-		fmt.Println("Dreamhost response: ", dreamhostResponse)
-		return emptyrecords, err // there was an error at the JSON unmarshalling level
+		return empty, err // there was an error at the JSON unmarshalling level
 	}
 	if statusCode == 429 {
 		fmt.Println("Rate limit hit. Pausing execution for 10 minutes.")
 		time.Sleep(600 * time.Second)
-		records, err = submitDreamhostCommand(command, apiKey)
+		result, err = submitDreamhostCommand(command, apiKey)
 	}
-	return records, err
+	return result, err
 }
 
 // getDNSRecords returns a DnsRecords struct containing all of the DNS records that correspond to this apiKey and any errors.
 // It returns an empty struct in the case of any errors in the web-layer, JSON demarshalling, or API non-success result.
 func GetDNSRecords(apiKey string) (DnsRecords, error) {
+	var emptyRecords DnsRecords
 	command := map[string]string{"cmd": "dns-list_records"}
 	dnsRecords, err := submitDreamhostCommand(command, apiKey)
 	if err != nil {
-		return dnsRecords, err // will already be the empty record
+		return emptyRecords, err // will already be the empty record
 	}
 	if dnsRecords.Result != "success" { // we hit the API successfully, but did not get back JSON successfully. eg: bad APIKey.
-		var emptyrecords DnsRecords
-		return emptyrecords, err
+		return emptyRecords, err
 	}
-	return dnsRecords, err
+	var dnsRecordList DnsRecords
+	err = json.Unmarshal([]byte(dnsRecords.Data), &dnsRecordList)
+	if err != nil {
+		return emptyRecords, err // there was an error at the JSON unmarshalling level
+	}
+	return dnsRecordList, err
 }
 
 // UpdateZoneFile returns a DnsRecords after using the Dreamhost API to either add or delete an IP address from a domain in Dreamhost and any errors.
@@ -111,7 +121,7 @@ func GetDNSRecords(apiKey string) (DnsRecords, error) {
 // Currently implemented commands for the command parameter are:
 //   - "add" to add a value (typically IP address) to a record (typically a domain).
 //   - "del" to remove a value (typically IP address) from a record (typically a domain).
-func UpdateZoneFIle(command string, domain string, IPAddress string, apiKey string, comment string) (DnsRecords, error) {
+func UpdateZoneFIle(command string, domain string, IPAddress string, apiKey string, comment string) (commandResult, error) {
 	var commandOptions map[string]string
 	switch command {
 	case "add":
@@ -131,11 +141,11 @@ func UpdateZoneFIle(command string, domain string, IPAddress string, apiKey stri
 
 // updateDNSRecord returns the JSON "result" field after using the Dreamhost API to first add the new IP address and, if successful, deleting the old one.
 // At whatever stage it errors out, it returns the empty string. So 2 empty strings would mean both operations errored.
-func UpdateDNSRecord(domain string, currentIP string, newIPAddress string, apiKey string, comment string) (DnsRecords, DnsRecords, error) {
+func UpdateDNSRecord(domain string, currentIP string, newIPAddress string, apiKey string, comment string) (commandResult, commandResult, error) {
 	resultOfAdd, err := UpdateZoneFIle("add", domain, newIPAddress, apiKey, comment)
-	var emptyrecords DnsRecords
+	var empty commandResult
 	if err != nil {
-		return emptyrecords, emptyrecords, err
+		return empty, empty, err
 	}
 	resultOfDelete, err := UpdateZoneFIle("del", domain, currentIP, apiKey, comment)
 	if err != nil {
