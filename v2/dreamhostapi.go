@@ -45,7 +45,7 @@ type commandResult struct {
 }
 
 // webGet returns the body as a string, an int representing the HTTP status code, and any errors.
-func WebGet(url string) (string, int, error) {
+func webGet(url string) (string, int, error) {
 	response, err := http.Get(url)
 	if err != nil {
 		return "Error accessing URL", 0, err
@@ -75,7 +75,7 @@ func submitDreamhostCommand(command map[string]string, apiKey string) (string, e
 	}
 	queryParameters.Add("format", "json")
 	fullURL := apiURLBase + queryParameters.Encode()
-	dreamhostResponse, statusCode, err := WebGet(fullURL)
+	dreamhostResponse, statusCode, err := webGet(fullURL)
 	if err != nil {
 		return dreamhostResponse, err
 	}
