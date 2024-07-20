@@ -108,7 +108,7 @@ func GetDNSRecords(apiKey string) (DnsRecords, error) {
 	if dnsRecords.Result != "success" { // we hit the API successfully, but did not get back JSON successfully. eg: bad APIKey.
 		return emptyRecords, err
 	}
-	fmt.Println(dnsRecords)
+	fmt.Println(dnsRecords.Data)
 	var dnsRecordList DnsRecords
 	err = json.NewDecoder(strings.NewReader(dnsRecords.Data)).Decode(&dnsRecordList)
 	//Unmarshal([]byte(dnsRecords.Data), &dnsRecordList)
