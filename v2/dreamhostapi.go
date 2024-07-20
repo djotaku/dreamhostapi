@@ -101,21 +101,23 @@ func submitDreamhostCommand(command map[string]string, apiKey string) (commandRe
 func GetDNSRecords(apiKey string) (DnsRecords, error) {
 	var emptyRecords DnsRecords
 	command := map[string]string{"cmd": "dns-list_records"}
-	dnsRecords, err := submitDreamhostCommand(command, apiKey)
+	cmdResult, err := submitDreamhostCommand(command, apiKey)
 	if err != nil {
 		return emptyRecords, err // will already be the empty record
 	}
-	if dnsRecords.Result != "success" { // we hit the API successfully, but did not get back JSON successfully. eg: bad APIKey.
+	if cmdResult.Result != "success" { // we hit the API successfully, but did not get back JSON successfully. eg: bad APIKey.
 		return emptyRecords, err
 	}
-	fmt.Println(dnsRecords.Data)
+	fmt.Println(cmdResult.Data)
 	var dnsRecordList DnsRecords
-	err = json.NewDecoder(strings.NewReader(dnsRecords.Data)).Decode(&dnsRecordList)
+	err = json.NewDecoder(strings.NewReader(cmdResult.Data)).Decode(&dnsRecordList)
 	//Unmarshal([]byte(dnsRecords.Data), &dnsRecordList)
 	if err != nil {
+		fmt.Println("I'm in here!")
+		fmt.Println(cmdResult.Data)
 		return emptyRecords, err // there was an error at the JSON unmarshalling level
 	}
-	dnsRecordList.Result = dnsRecords.Result
+	dnsRecordList.Result = cmdResult.Result
 	return dnsRecordList, err
 }
 
