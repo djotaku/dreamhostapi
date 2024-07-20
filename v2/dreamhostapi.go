@@ -79,6 +79,7 @@ func submitDreamhostCommand(command map[string]string, apiKey string) (DnsRecord
 	}
 	err = json.Unmarshal([]byte(dreamhostResponse), &records)
 	if err != nil {
+		fmt.Println("Dreamhost response: ", dreamhostResponse)
 		return emptyrecords, err // there was an error at the JSON unmarshalling level
 	}
 	if statusCode == 429 {
