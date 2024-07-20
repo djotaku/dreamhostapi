@@ -66,7 +66,7 @@ func submitDreamhostCommand(command map[string]string, apiKey string) (string, e
 	if statusCode == 429 {
 		fmt.Println("Rate limit hit. Pausing execution for 10 minutes.")
 		time.Sleep(600 * time.Second)
-		submitDreamhostCommand(command, apiKey)
+		dreamhostResponse, err = submitDreamhostCommand(command, apiKey)
 	}
 	return dreamhostResponse, err
 }
