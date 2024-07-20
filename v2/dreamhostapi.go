@@ -118,6 +118,9 @@ func UpdateZoneFIle(command string, domain string, IPAddress string, apiKey stri
 	case "del":
 		commandOptions = map[string]string{"cmd": "dns-remove_record", "record": domain, "type": "A", "value": IPAddress, "comment": comment}
 	}
+	if comment == "" {
+		delete(commandOptions, "comment")
+	}
 	response, err := submitDreamhostCommand(commandOptions, apiKey)
 	if err != nil {
 		return response, err
