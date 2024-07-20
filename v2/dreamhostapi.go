@@ -59,7 +59,7 @@ func WebGet(url string) (string, int, error) {
 
 // A commandResult holds the JSON result from the Dreamhost API.
 type commandResult struct {
-	Data   string `json:"data"`   // A string that would need to be unmarshalled to turn it into a map.
+	Data   any    `json:"data"`   // A string that would need to be unmarshalled to turn it into a map.
 	Result string `json:"result"` // A string representing whether the API was successfully accessed or not.
 }
 
